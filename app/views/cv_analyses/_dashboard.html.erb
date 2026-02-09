@@ -1,0 +1,432 @@
+<div class="dashboard-grid">
+  <!-- Personal Data Section -->
+  <% if result["personal_data"].present? %>
+    <section class="dashboard-section personal-info-section">
+      <h2><span class="section-icon">👤</span> Personal Information</h2>
+      <div class="info-grid">
+        <% personal = result["personal_data"] %>
+        <% if personal["full_name"].present? && personal["full_name"]["value"].present? %>
+          <div class="info-item">
+            <span class="info-label">Name</span>
+            <span class="info-value"><%= personal["full_name"]["value"] %></span>
+          </div>
+        <% end %>
+        <% if personal["email"].present? && personal["email"]["value"].present? %>
+          <div class="info-item">
+            <span class="info-label">Email</span>
+            <span class="info-value"><%= mail_to personal["email"]["value"] %></span>
+          </div>
+        <% end %>
+        <% if personal["phone"].present? && personal["phone"]["value"].present? %>
+          <div class="info-item">
+            <span class="info-label">Phone</span>
+            <span class="info-value"><%= personal["phone"]["value"] %></span>
+          </div>
+        <% end %>
+        <% if personal["location"].present? %>
+          <% location = personal["location"] %>
+          <% location_parts = [location["city"], location["country"]].compact.reject(&:blank?) %>
+          <% if location_parts.any? || location["remote"] %>
+            <div class="info-item">
+              <span class="info-label">Location</span>
+              <span class="info-value">
+                <%= location_parts.join(", ") %>
+                <% if location["remote"] %>
+                  <span class="badge badge-success" style="margin-left: 0.5rem;">Remote</span>
+                <% end %>
+              </span>
+            </div>
+          <% end %>
+        <% end %>
+        <% if personal["links"].present? %>
+          <% links = personal["links"] %>
+          <% if links["linkedin"].present? %>
+            <div class="info-item">
+              <span class="info-label">LinkedIn</span>
+              <span class="info-value"><%= link_to links["linkedin"], links["linkedin"], target: "_blank" %></span>
+            </div>
+          <% end %>
+          <% if links["github"].present? %>
+            <div class="info-item">
+              <span class="info-label">GitHub</span>
+              <span class="info-value"><%= link_to links["github"], links["github"], target: "_blank" %></span>
+            </div>
+          <% end %>
+          <% if links["portfolio"].present? %>
+            <div class="info-item">
+              <span class="info-label">Portfolio</span>
+              <span class="info-value"><%= link_to links["portfolio"], links["portfolio"], target: "_blank" %></span>
+            </div>
+          <% end %>
+          <% if links["technical_blog"].present? %>
+            <div class="info-item">
+              <span class="info-label">Technical Blog</span>
+              <span class="info-value"><%= link_to links["technical_blog"], links["technical_blog"], target: "_blank" %></span>
+            </div>
+          <% end %>
+        <% end %>
+      </div>
+    </section>
+  <% end %>
+
+  <!-- Professional Summary Section -->
+  <% if result["professional_summary"].present? %>
+    <section class="dashboard-section summary-section">
+      <h2><span class="section-icon">📝</span> Professional Summary</h2>
+      <% summary = result["professional_summary"] %>
+      <div class="info-grid vertical" style="margin-bottom: 1.5rem;">
+        <% if summary["current_role"].present? && summary["current_role"]["value"].present? %>
+          <div class="info-item">
+            <span class="info-label">Current Role</span>
+            <span class="info-value" style="font-size: 1.125rem; font-weight: 600;"><%= summary["current_role"]["value"] %></span>
+          </div>
+        <% end %>
+        <% if summary["primary_area"].present? %>
+          <div class="info-item">
+            <span class="info-label">Primary Area</span>
+            <span class="info-value"><%= summary["primary_area"] %></span>
+          </div>
+        <% end %>
+        <% if summary["estimated_years_experience"].present? %>
+          <% exp = summary["estimated_years_experience"] %>
+          <div class="info-item">
+            <span class="info-label">Experience</span>
+            <span class="info-value">
+              <%= exp["value"] %> years
+              <% if exp["confidence"].present? %>
+                <span class="badge badge-<%= exp["confidence"] == 'high' ? 'success' : (exp["confidence"] == 'medium' ? 'warning' : 'secondary') %>" style="margin-left: 0.5rem;">
+                  <%= exp["confidence"].capitalize %> confidence
+                </span>
+              <% end %>
+            </span>
+            <% if exp["method"].present? %>
+              <span class="info-sublabel" style="font-size: 0.75rem; color: var(--color-gray-400);">Method: <%= exp["method"] %></span>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+      <% if summary["primary_stack"].present? && summary["primary_stack"].any? %>
+        <div class="skill-category">
+          <h4>Primary Stack</h4>
+          <div class="skill-tags">
+            <% summary["primary_stack"].each do |tech| %>
+              <span class="skill-tag technical"><%= tech %></span>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    </section>
+  <% end %>
+
+  <!-- Technical Skills Section -->
+  <% if result["technical_skills"].present? %>
+    <section class="dashboard-section skills-section">
+      <h2><span class="section-icon">🛠️</span> Technical Skills</h2>
+      <div class="skills-grid">
+        <% skills = result["technical_skills"] %>
+
+        <!-- Programming Languages -->
+        <% if skills["languages"].present? && skills["languages"].any? %>
+          <div class="skill-category">
+            <h4>Programming Languages</h4>
+            <div class="skill-tags">
+              <% skills["languages"].each do |lang| %>
+                <span class="skill-tag technical" title="<%= lang["estimated_experience_years"] %> years experience">
+                  <%= lang["name"] %>
+                  <% if lang["level"].present? %>
+                    <span style="opacity: 0.7; font-size: 0.75rem;"> (<%= lang["level"] %>)</span>
+                  <% end %>
+                </span>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+
+        <!-- Frameworks & Libraries -->
+        <% if skills["frameworks_and_libraries"].present? && skills["frameworks_and_libraries"].any? %>
+          <div class="skill-category">
+            <h4>Frameworks & Libraries</h4>
+            <div class="skill-tags">
+              <% skills["frameworks_and_libraries"].each do |fw| %>
+                <span class="skill-tag soft" title="<%= fw["associated_stack"] %>">
+                  <%= fw["name"] %>
+                </span>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+
+        <!-- Databases -->
+        <% if skills["databases"].present? %>
+          <% db = skills["databases"] %>
+          <% if (db["relational"].present? && db["relational"].any?) || (db["non_relational"].present? && db["non_relational"].any?) %>
+            <div class="skill-category">
+              <h4>Databases</h4>
+              <div class="skill-tags">
+                <% if db["relational"].present? %>
+                  <% db["relational"].each do |d| %>
+                    <span class="skill-tag language" title="Relational"><%= d %></span>
+                  <% end %>
+                <% end %>
+                <% if db["non_relational"].present? %>
+                  <% db["non_relational"].each do |d| %>
+                    <span class="skill-tag" style="background-color: #fef3c7; color: #92400e;" title="Non-relational"><%= d %></span>
+                  <% end %>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        <% end %>
+
+        <!-- Cloud & Infrastructure -->
+        <% if skills["cloud_and_infra"].present? %>
+          <% cloud = skills["cloud_and_infra"] %>
+          <% if (cloud["providers"].present? && cloud["providers"].any?) || (cloud["tools"].present? && cloud["tools"].any?) %>
+            <div class="skill-category">
+              <h4>Cloud & Infrastructure</h4>
+              <div class="skill-tags">
+                <% if cloud["providers"].present? %>
+                  <% cloud["providers"].each do |p| %>
+                    <span class="skill-tag" style="background-color: #dbeafe; color: #1e40af;"><%= p %></span>
+                  <% end %>
+                <% end %>
+                <% if cloud["tools"].present? %>
+                  <% cloud["tools"].each do |t| %>
+                    <span class="skill-tag" style="background-color: #e0e7ff; color: #3730a3;"><%= t %></span>
+                  <% end %>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        <% end %>
+
+        <!-- General Tools -->
+        <% if skills["general_tools"].present? %>
+          <% tools = skills["general_tools"] %>
+          <% has_tools = (tools["version_control"].present? && tools["version_control"].any?) ||
+                         (tools["ci_cd"].present? && tools["ci_cd"].any?) ||
+                         (tools["observability"].present? && tools["observability"].any?) %>
+          <% if has_tools %>
+            <div class="skill-category">
+              <h4>Development Tools</h4>
+              <div class="skill-tags">
+                <% if tools["version_control"].present? %>
+                  <% tools["version_control"].each do |vc| %>
+                    <span class="skill-tag" style="background-color: #f3e8ff; color: #6b21a8;" title="Version Control"><%= vc %></span>
+                  <% end %>
+                <% end %>
+                <% if tools["ci_cd"].present? %>
+                  <% tools["ci_cd"].each do |ci| %>
+                    <span class="skill-tag" style="background-color: #dcfce7; color: #166534;" title="CI/CD"><%= ci %></span>
+                  <% end %>
+                <% end %>
+                <% if tools["observability"].present? %>
+                  <% tools["observability"].each do |obs| %>
+                    <span class="skill-tag" style="background-color: #ffedd5; color: #9a3412;" title="Observability"><%= obs %></span>
+                  <% end %>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        <% end %>
+      </div>
+    </section>
+  <% end %>
+
+  <!-- Professional Experience Section -->
+  <% if result["professional_experience"].present? && result["professional_experience"].any? %>
+    <section class="dashboard-section experience-section">
+      <h2><span class="section-icon">💼</span> Professional Experience</h2>
+      <div class="timeline">
+        <% result["professional_experience"].each do |exp| %>
+          <div class="timeline-item">
+            <div class="timeline-header">
+              <h4 class="timeline-title"><%= exp["role"] %></h4>
+              <span class="timeline-company"><%= exp["company"] %></span>
+            </div>
+            <% if exp["period"].present? %>
+              <span class="timeline-period">
+                <%= exp["period"]["start"] %> - <%= exp["period"]["end"] || "Present" %>
+                <% if exp["total_time_in_role_months"].present? %>
+                  <span style="margin-left: 0.5rem; color: var(--color-gray-400);">
+                    (<%= exp["total_time_in_role_months"] %> months)
+                  </span>
+                <% end %>
+              </span>
+            <% end %>
+            <% if exp["responsibilities"].present? && exp["responsibilities"].any? %>
+              <ul class="timeline-responsibilities" style="margin: 0.75rem 0; padding-left: 1.25rem; color: var(--color-gray-600);">
+                <% exp["responsibilities"].each do |resp| %>
+                  <li style="margin-bottom: 0.25rem;"><%= resp %></li>
+                <% end %>
+              </ul>
+            <% end %>
+            <% if exp["technologies_used"].present? && exp["technologies_used"].any? %>
+              <div class="skill-tags" style="margin-top: 0.75rem;">
+                <% exp["technologies_used"].each do |tech| %>
+                  <span class="skill-tag technical" style="font-size: 0.75rem; padding: 0.125rem 0.5rem;"><%= tech %></span>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    </section>
+  <% end %>
+
+  <!-- Education Section -->
+  <% if result["education"].present? && result["education"].any? %>
+    <section class="dashboard-section education-section">
+      <h2><span class="section-icon">🎓</span> Education</h2>
+      <div class="timeline">
+        <% result["education"].each do |edu| %>
+          <div class="timeline-item">
+            <div class="timeline-header">
+              <h4 class="timeline-title"><%= edu["course"] %></h4>
+              <span class="timeline-company"><%= edu["institution"] %></span>
+            </div>
+            <span class="timeline-period">
+              <% if edu["degree"].present? %>
+                <%= edu["degree"] %>
+                <% if edu["conclusion_year"].present? || edu["status"].present? %>
+                  &middot;
+                <% end %>
+              <% end %>
+              <% if edu["conclusion_year"].present? %>
+                <%= edu["conclusion_year"] %>
+              <% end %>
+              <% if edu["status"].present? %>
+                <span class="badge badge-<%= edu["status"] == 'completed' ? 'success' : 'secondary' %>" style="margin-left: 0.5rem;">
+                  <%= edu["status"].capitalize %>
+                </span>
+              <% end %>
+            </span>
+          </div>
+        <% end %>
+      </div>
+    </section>
+  <% end %>
+
+  <!-- Certifications Section -->
+  <% if result["certifications"].present? && result["certifications"].any? %>
+    <section class="dashboard-section certifications-section">
+      <h2><span class="section-icon">🏅</span> Certifications</h2>
+      <ul class="certifications-list">
+        <% result["certifications"].each do |cert| %>
+          <li>
+            <div style="flex: 1;">
+              <strong><%= cert["name"] %></strong>
+              <% if cert["issuer"].present? %>
+                <span style="color: var(--color-gray-500);"> — <%= cert["issuer"] %></span>
+              <% end %>
+              <div style="margin-top: 0.25rem;">
+                <% if cert["year"].present? %>
+                  <span class="badge badge-secondary"><%= cert["year"] %></span>
+                <% end %>
+                <% if cert["area"].present? %>
+                  <span class="badge badge-info" style="margin-left: 0.25rem;"><%= cert["area"] %></span>
+                <% end %>
+              </div>
+            </div>
+          </li>
+        <% end %>
+      </ul>
+    </section>
+  <% end %>
+
+  <!-- Languages Section -->
+  <% if result["languages"].present? && result["languages"].any? %>
+    <section class="dashboard-section languages-section">
+      <h2><span class="section-icon">🌐</span> Languages</h2>
+      <div class="info-grid">
+        <% result["languages"].each do |lang| %>
+          <div class="info-item">
+            <span class="info-label"><%= lang["language"] %></span>
+            <span class="info-value">
+              <% proficiency = lang["proficiency"] %>
+              <% color = case proficiency&.downcase
+                         when 'native', 'fluent' then 'success'
+                         when 'advanced', 'professional' then 'info'
+                         when 'intermediate' then 'warning'
+                         else 'secondary'
+                         end %>
+              <span class="badge badge-<%= color %>"><%= proficiency&.capitalize %></span>
+            </span>
+          </div>
+        <% end %>
+      </div>
+    </section>
+  <% end %>
+
+  <!-- Advanced Inferences Section -->
+  <% if result["advanced_inferences"].present? %>
+    <section class="dashboard-section inferences-section">
+      <h2><span class="section-icon">🔍</span> Advanced Analysis</h2>
+      <% inferences = result["advanced_inferences"] %>
+
+      <div class="info-grid" style="margin-bottom: 1.5rem;">
+        <!-- Estimated Seniority -->
+        <% if inferences["estimated_seniority"].present? %>
+          <% seniority = inferences["estimated_seniority"] %>
+          <div class="info-item">
+            <span class="info-label">Estimated Seniority</span>
+            <div class="info-value">
+              <strong style="font-size: 1.125rem;"><%= seniority["value"]&.capitalize %></strong>
+              <% if seniority["confidence"].present? %>
+                <span class="badge badge-<%= seniority["confidence"] == 'high' ? 'success' : (seniority["confidence"] == 'medium' ? 'warning' : 'secondary') %>" style="margin-left: 0.5rem;">
+                  <%= seniority["confidence"].capitalize %>
+                </span>
+              <% end %>
+            </div>
+            <% if seniority["criteria"].present? && seniority["criteria"].any? %>
+              <div style="margin-top: 0.5rem;">
+                <% seniority["criteria"].each do |criterion| %>
+                  <span class="skill-tag" style="background-color: var(--color-gray-100); color: var(--color-gray-600); font-size: 0.75rem;"><%= criterion %></span>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+
+        <!-- Environment Type -->
+        <% if inferences["environment_type"].present? %>
+          <% env = inferences["environment_type"] %>
+          <div class="info-item">
+            <span class="info-label">Environment Type</span>
+            <span class="info-value">
+              <strong><%= env["value"]&.capitalize %></strong>
+              <% if env["confidence"].present? %>
+                <span class="badge badge-<%= env["confidence"] == 'high' ? 'success' : (env["confidence"] == 'medium' ? 'warning' : 'secondary') %>" style="margin-left: 0.5rem;">
+                  <%= env["confidence"].capitalize %>
+                </span>
+              <% end %>
+            </span>
+          </div>
+        <% end %>
+      </div>
+
+      <!-- Experience Flags -->
+      <% if inferences["experience_flags"].present? %>
+        <% flags = inferences["experience_flags"] %>
+        <% active_flags = [] %>
+        <% active_flags << { name: "Distributed Systems", icon: "🔗" } if flags["distributed_systems"] %>
+        <% active_flags << { name: "High Scale", icon: "📈" } if flags["high_scale"] %>
+        <% active_flags << { name: "Performance Optimization", icon: "⚡" } if flags["performance_optimization"] %>
+        <% active_flags << { name: "Security", icon: "🔒" } if flags["security"] %>
+
+        <% if active_flags.any? %>
+          <div class="skill-category">
+            <h4>Experience Indicators</h4>
+            <div class="skill-tags">
+              <% active_flags.each do |flag| %>
+                <span class="skill-tag" style="background-color: #d1fae5; color: #065f46;">
+                  <%= flag[:icon] %> <%= flag[:name] %>
+                </span>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      <% end %>
+    </section>
+  <% end %>
+</div>

@@ -68,3 +68,5 @@ end
 # CV Analysis feature
 gem "ruby_llm"       # LLM integration for AI-powered CV analysis
 gem "pdf-reader"     # Extract text from PDF files
+
+gem "pry", "~> 0.16.0"

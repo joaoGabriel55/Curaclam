@@ -1,0 +1,57 @@
+<div id="navbar-notifications-content">
+  <button class="notifications-toggle" data-action="click->notifications#toggle" aria-label="Notifications">
+    <span class="notification-bell">🔔</span>
+    <% unread_count = Notification.unread.count %>
+    <% if unread_count > 0 %>
+      <span class="notification-badge" id="unread-count"><%= unread_count > 99 ? '99+' : unread_count %></span>
+    <% end %>
+  </button>
+
+  <div class="notifications-menu" data-notifications-target="menu" hidden>
+    <div class="notifications-header">
+      <h4>Notifications</h4>
+      <%= link_to "View All", notifications_path, class: "view-all-link" %>
+    </div>
+
+    <div class="notifications-body">
+      <% recent_notifications = Notification.recent.limit(5) %>
+      <% if recent_notifications.any? %>
+        <% recent_notifications.each do |notification| %>
+          <div class="notification-preview <%= 'unread' unless notification.read %>">
+            <div class="notification-preview-icon">
+              <% if notification.notifiable.is_a?(CvAnalysis) %>
+                <% if notification.notifiable.completed? %>
+                  ✅
+                <% elsif notification.notifiable.failed? %>
+                  ❌
+                <% else %>
+                  ⏳
+                <% end %>
+              <% else %>
+                🔔
+              <% end %>
+            </div>
+            <div class="notification-preview-content">
+              <% if notification.has_link? %>
+                <%= link_to notification.message.truncate(60), notification.link, class: "notification-link" %>
+              <% else %>
+                <span class="notification-text"><%= notification.message.truncate(60) %></span>
+              <% end %>
+              <span class="notification-time"><%= time_ago_in_words(notification.created_at) %> ago</span>
+            </div>
+          </div>
+        <% end %>
+      <% else %>
+        <div class="no-notifications">
+          <p>No notifications yet</p>
+        </div>
+      <% end %>
+    </div>
+
+    <% if Notification.unread.any? %>
+      <div class="notifications-footer">
+        <%= button_to "Mark All as Read", mark_all_as_read_notifications_path, method: :post, class: "mark-all-read-btn" %>
+      </div>
+    <% end %>
+  </div>
+</div>

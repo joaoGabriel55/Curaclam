@@ -1,0 +1,59 @@
+<div id="cv-analysis-content">
+  <div class="analysis-header">
+    <div class="analysis-file-info">
+      <% if cv_analysis.cv_file.attached? %>
+        <span class="file-icon">📄</span>
+        <span class="file-name"><%= cv_analysis.cv_file.filename %></span>
+      <% end %>
+      <span class="status-badge status-<%= cv_analysis.status %>">
+        <%= cv_analysis.status.titleize %>
+      </span>
+    </div>
+    <div class="analysis-meta">
+      Uploaded <%= time_ago_in_words(cv_analysis.created_at) %> ago
+    </div>
+  </div>
+
+  <% if cv_analysis.pending? || cv_analysis.processing? %>
+    <div class="processing-state">
+      <div class="spinner"></div>
+      <h3>Analyzing your CV...</h3>
+      <p>This may take a few moments. The page will update automatically when complete.</p>
+      <p class="refresh-hint">
+        <%= link_to "Refresh page", cv_analysis_path(cv_analysis), class: "btn btn-secondary btn-sm" %>
+      </p>
+    </div>
+
+  <% elsif cv_analysis.failed? %>
+    <div class="error-state">
+      <div class="error-icon">❌</div>
+      <h3>Analysis Failed</h3>
+      <p><%= cv_analysis.error_message %></p>
+      <div class="error-actions">
+        <%= link_to "Try Again", new_cv_analysis_path, class: "btn btn-primary" %>
+        <%= button_to "Delete", cv_analysis_path(cv_analysis), method: :delete, class: "btn btn-danger", data: { turbo_confirm: "Are you sure?" } %>
+      </div>
+    </div>
+
+  <% elsif cv_analysis.completed? && cv_analysis.has_results? %>
+    <% result = cv_analysis.parsed_result %>
+
+    <%= render "dashboard", result: %>
+
+    <!-- Raw Text Section (Collapsible) -->
+    <% if cv_analysis.extracted_text.present? %>
+      <details class="extracted-text-section">
+        <summary>View Extracted Text</summary>
+        <pre class="extracted-text"><%= cv_analysis.extracted_text %></pre>
+      </details>
+    <% end %>
+
+  <% else %>
+    <div class="empty-state">
+      <div class="empty-state-icon">🔍</div>
+      <h3>No Analysis Results</h3>
+      <p>Something went wrong. Please try uploading your CV again.</p>
+      <%= link_to "Upload New CV", new_cv_analysis_path, class: "btn btn-primary" %>
+    </div>
+  <% end %>
+</div>

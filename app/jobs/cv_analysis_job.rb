@@ -14,7 +14,6 @@ class CvAnalysisJob < ApplicationJob
     cv_analysis.update!(status: :processing)
 
     begin
-      # Step 1: Extract text from PDF
       extracted_text = extract_text_from_pdf(cv_analysis)
 
       if extracted_text.blank?
@@ -23,18 +22,7 @@ class CvAnalysisJob < ApplicationJob
 
       cv_analysis.update!(extracted_text: extracted_text)
 
-      # Step 2: Analyze with LLM
-      analysis_result = analyze_with_llm(extracted_text)
-
-      # Step 3: Save results and mark as completed
-      cv_analysis.update!(
-        analysis_result: analysis_result,
-        status: :completed
-      )
-
-      # Step 4: Create notification
-      create_success_notification(cv_analysis)
-
+      analyze_with_llm(extracted_text, cv_analysis)
     rescue => e
       Rails.logger.error("CV Analysis failed for ID #{cv_analysis_id}: #{e.message}")
       Rails.logger.error(e.backtrace.join("\n"))
@@ -69,85 +57,35 @@ class CvAnalysisJob < ApplicationJob
     end
   end
 
-  def analyze_with_llm(extracted_text)
+  def analyze_with_llm(extracted_text, cv_analysis)
     prompt = build_analysis_prompt(extracted_text)
 
+    tool = McpTools::NormalizeResumeTool.new(cv_analysis)
+
     chat = RubyLLM.chat(provider: :ollama)
+      .with_tool(tool)
+      .on_tool_call do |tool_call|
+        puts "Calling tool: #{tool_call.name}"
+        puts "Arguments: #{tool_call.arguments}"
+      end
+      .on_tool_result do |result|
+        create_success_notification(cv_analysis)
+      end
+
     response = chat.ask(prompt)
 
-    # Parse the JSON response from LLM
-    parse_llm_response(response.content)
+    response.content
   end
 
   def build_analysis_prompt(extracted_text)
+    prompt = File.read("app/jobs/prompt.md")
+
     <<~PROMPT
-      You are an expert HR assistant specialized in analyzing CVs/resumes.
-      Analyze the following CV text and extract structured information.
+      #{prompt}
 
-      Return your analysis as a valid JSON object with the following structure:
-      {
-        "personal_info": {
-          "name": "Full name of the candidate",
-          "email": "Email address if found",
-          "phone": "Phone number if found",
-          "location": "City/Country if found",
-          "linkedin": "LinkedIn URL if found",
-          "portfolio": "Portfolio/Website URL if found"
-        },
-        "summary": "A brief professional summary (2-3 sentences)",
-        "skills": {
-          "technical": ["List of technical skills"],
-          "soft_skills": ["List of soft skills"],
-          "languages": ["List of languages spoken with proficiency level"]
-        },
-        "experience": [
-          {
-            "title": "Job title",
-            "company": "Company name",
-            "period": "Employment period",
-            "description": "Brief description of responsibilities and achievements"
-          }
-        ],
-        "education": [
-          {
-            "degree": "Degree/Certificate name",
-            "institution": "School/University name",
-            "year": "Graduation year or period",
-            "details": "Any additional details like GPA, honors, etc."
-          }
-        ],
-        "certifications": ["List of certifications"],
-        "highlights": ["3-5 key highlights or achievements from the CV"],
-        "recommendations": ["2-3 suggestions for improving this CV"]
-      }
-
-      If any information is not available in the CV, use null for that field.
-      Ensure the response is valid JSON only, with no additional text before or after.
-
-      CV TEXT:
+      ## raw curriculum text:
       #{extracted_text}
     PROMPT
-  end
-
-  def parse_llm_response(content)
-    # Try to extract JSON from the response
-    json_match = content.match(/\{[\s\S]*\}/)
-
-    if json_match
-      JSON.parse(json_match[0])
-    else
-      # If no JSON found, create a basic structure with the raw response
-      {
-        "summary" => content,
-        "parse_error" => "Could not parse structured response from LLM"
-      }
-    end
-  rescue JSON::ParserError => e
-    Rails.logger.warn("Failed to parse LLM response as JSON: #{e.message}")
-    {
-      "summary" => content,
-      "parse_error" => "Invalid JSON in LLM response: #{e.message}"
-    }
   end
 
   def create_success_notification(cv_analysis)
