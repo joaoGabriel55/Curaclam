@@ -1,0 +1,53 @@
+<div class="container">
+  <header class="page-header">
+    <h1>CV Analyses</h1>
+    <%= link_to "Upload New CV", new_cv_analysis_path, class: "btn btn-primary" %>
+  </header>
+
+  <% if notice.present? %>
+    <div class="alert alert-success">
+      <%= notice %>
+    </div>
+  <% end %>
+
+  <% if @cv_analyses.any? %>
+    <div class="cv-analyses-list">
+      <% @cv_analyses.each do |cv_analysis| %>
+        <div class="cv-analysis-card">
+          <div class="cv-analysis-info">
+            <div class="cv-analysis-title">
+              <% if cv_analysis.cv_file.attached? %>
+                <span class="file-icon">📄</span>
+                <%= cv_analysis.cv_file.filename %>
+              <% else %>
+                <span class="file-icon">📄</span>
+                CV Analysis #<%= cv_analysis.id %>
+              <% end %>
+            </div>
+            <div class="cv-analysis-meta">
+              <span class="date">Uploaded <%= time_ago_in_words(cv_analysis.created_at) %> ago</span>
+            </div>
+          </div>
+
+          <div class="cv-analysis-status">
+            <span class="status-badge status-<%= cv_analysis.status %>">
+              <%= cv_analysis.status.titleize %>
+            </span>
+          </div>
+
+          <div class="cv-analysis-actions">
+            <%= link_to "View", cv_analysis_path(cv_analysis), class: "btn btn-secondary btn-sm" %>
+            <%= button_to "Delete", cv_analysis_path(cv_analysis), method: :delete, class: "btn btn-danger btn-sm", data: { turbo_confirm: "Are you sure you want to delete this analysis?" } %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  <% else %>
+    <div class="empty-state">
+      <div class="empty-state-icon">📋</div>
+      <h3>No CV Analyses Yet</h3>
+      <p>Upload your first CV to get started with AI-powered analysis.</p>
+      <%= link_to "Upload CV", new_cv_analysis_path, class: "btn btn-primary" %>
+    </div>
+  <% end %>
+</div>

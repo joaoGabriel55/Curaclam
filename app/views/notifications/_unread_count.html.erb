@@ -1,0 +1,5 @@
+<% if count > 0 %>
+  <span class="notification-badge" id="unread-count"><%= count > 99 ? '99+' : count %></span>
+<% else %>
+  <span id="unread-count"></span>
+<% end %>

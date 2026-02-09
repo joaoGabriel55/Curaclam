@@ -1,0 +1,38 @@
+<%= turbo_stream.replace dom_id(@notification) do %>
+  <div class="notification-item" id="<%= dom_id(@notification) %>">
+    <div class="notification-content">
+      <div class="notification-icon">
+        <% if @notification.notifiable.is_a?(CvAnalysis) %>
+          <% if @notification.notifiable.completed? %>
+            ✅
+          <% elsif @notification.notifiable.failed? %>
+            ❌
+          <% else %>
+            ⏳
+          <% end %>
+        <% else %>
+          🔔
+        <% end %>
+      </div>
+      <div class="notification-body">
+        <p class="notification-message"><%= @notification.message %></p>
+        <span class="notification-time"><%= time_ago_in_words(@notification.created_at) %> ago</span>
+      </div>
+    </div>
+
+    <div class="notification-actions">
+      <% if @notification.has_link? %>
+        <%= link_to "View", @notification.link, class: "btn btn-primary btn-sm" %>
+      <% end %>
+    </div>
+  </div>
+<% end %>
+
+<%= turbo_stream.replace "unread-count" do %>
+  <% unread_count = Notification.unread.count %>
+  <% if unread_count > 0 %>
+    <span class="notification-badge" id="unread-count"><%= unread_count > 99 ? '99+' : unread_count %></span>
+  <% else %>
+    <span id="unread-count"></span>
+  <% end %>
+<% end %>

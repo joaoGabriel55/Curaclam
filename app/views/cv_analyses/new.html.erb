@@ -1,0 +1,103 @@
+<div class="container">
+  <header class="page-header">
+    <h1>Upload CV for Analysis</h1>
+    <%= link_to "← Back to All Analyses", cv_analyses_path, class: "btn btn-secondary" %>
+  </header>
+
+  <% if @cv_analysis.errors.any? %>
+    <div class="alert alert-danger">
+      <h4><%= pluralize(@cv_analysis.errors.count, "error") %> prevented this CV from being analyzed:</h4>
+      <ul>
+        <% @cv_analysis.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="upload-section">
+    <div class="upload-card">
+      <div class="upload-icon">📄</div>
+      <h2>Upload Your CV</h2>
+      <p class="upload-description">
+        Upload a PDF file of your CV/resume and our AI will analyze it to extract key information,
+        skills, experience, and provide suggestions for improvement.
+      </p>
+
+      <%= form_with model: @cv_analysis, local: true, class: "upload-form" do |form| %>
+        <div class="form-group">
+          <div class="file-upload-wrapper">
+            <%= form.file_field :cv_file, 
+                                accept: "application/pdf",
+                                class: "file-input",
+                                id: "cv_file_input",
+                                data: { controller: "file-upload" } %>
+            <label for="cv_file_input" class="file-upload-label">
+              <span class="file-upload-icon">📤</span>
+              <span class="file-upload-text">Choose a PDF file or drag it here</span>
+              <span class="file-upload-hint">Maximum file size: 10MB</span>
+            </label>
+          </div>
+          <div id="file-name-display" class="file-name-display"></div>
+        </div>
+
+        <div class="form-actions">
+          <%= form.submit "Analyze CV", class: "btn btn-primary btn-lg" %>
+        </div>
+      <% end %>
+
+      <div class="upload-info">
+        <h4>What we analyze:</h4>
+        <ul class="feature-list">
+          <li><span class="feature-icon">👤</span> Personal Information</li>
+          <li><span class="feature-icon">💼</span> Work Experience</li>
+          <li><span class="feature-icon">🎓</span> Education</li>
+          <li><span class="feature-icon">🛠️</span> Technical & Soft Skills</li>
+          <li><span class="feature-icon">🏆</span> Certifications & Achievements</li>
+          <li><span class="feature-icon">💡</span> Improvement Suggestions</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const fileInput = document.getElementById('cv_file_input');
+    const fileNameDisplay = document.getElementById('file-name-display');
+    const uploadLabel = document.querySelector('.file-upload-label');
+
+    fileInput.addEventListener('change', function() {
+      if (this.files && this.files[0]) {
+        const fileName = this.files[0].name;
+        fileNameDisplay.textContent = 'Selected: ' + fileName;
+        fileNameDisplay.style.display = 'block';
+        uploadLabel.classList.add('file-selected');
+      }
+    });
+
+    // Drag and drop support
+    uploadLabel.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      this.classList.add('drag-over');
+    });
+
+    uploadLabel.addEventListener('dragleave', function(e) {
+      e.preventDefault();
+      this.classList.remove('drag-over');
+    });
+
+    uploadLabel.addEventListener('drop', function(e) {
+      e.preventDefault();
+      this.classList.remove('drag-over');
+      
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        fileInput.files = e.dataTransfer.files;
+        const fileName = e.dataTransfer.files[0].name;
+        fileNameDisplay.textContent = 'Selected: ' + fileName;
+        fileNameDisplay.style.display = 'block';
+        this.classList.add('file-selected');
+      }
+    });
+  });
+</script>
