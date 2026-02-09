@@ -1,4 +1,10 @@
-# README
+# Curaclam
+
+<img width="1645" height="1275" alt="image" src="https://github.com/user-attachments/assets/2ac7b4f5-87f3-45ba-90bd-fc674d72f9ab" />
+
+<img width="2157" height="1268" alt="image" src="https://github.com/user-attachments/assets/fa69ba72-90da-4771-8ff4-4b9e3a0ee118" />
+
+<img width="2266" height="872" alt="image" src="https://github.com/user-attachments/assets/6559a296-eac6-46f7-bfb3-b11839d94dd3" />
 
 This app can help you to upload a cv file and delegate the analyis to a local or cloud LLM model and see the info organized in a nice dashboard.
 
