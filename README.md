@@ -1,24 +1,43 @@
 # README
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
+This app can help you to upload a cv file and delegate the analyis to a local or cloud LLM model and see the info organized in a nice dashboard.
 
-Things you may want to cover:
+## How to run
+```bash
+rails s
+```
 
-* Ruby version
+## How to setup LLM model and provider
 
-* System dependencies
+Just update/adjust the `ruby_llm.rb` and check the https://rubyllm.com/ docs setup your own LLM setup.
 
-* Configuration
+```ruby
+RubyLLM.configure do |config|
+  # OpenAI Configuration
+  # Get your API key from: https://platform.openai.com/api-keys
+  config.openai_api_key = ENV.fetch("OPENAI_API_KEY", nil)
 
-* Database creation
+  # Anthropic Configuration (Claude)
+  # Get your API key from: https://console.anthropic.com/
+  config.anthropic_api_key = ENV.fetch("ANTHROPIC_API_KEY", nil)
 
-* Database initialization
+  # Google Gemini Configuration
+  # Get your API key from: https://makersuite.google.com/app/apikey
+  config.gemini_api_key = ENV.fetch("GEMINI_API_KEY", nil)
 
-* How to run the test suite
+  config.ollama_api_base = "http://localhost:11434/v1"
 
-* Services (job queues, cache servers, search engines, etc.)
+  # Default model to use for chat completions
+  # Uncomment and modify based on your preferred provider:
+  config.default_model = "qwen2.5:latest"
 
-* Deployment instructions
+  # Request timeout in seconds (default is 120)
+  config.request_timeout = 120
 
-* ...
+  # Maximum number of retries for failed requests (default is 3)
+  config.max_retries = 3
+
+  # Use Rails logger for debugging
+  config.logger = Rails.logger if defined?(Rails)
+end
+```
