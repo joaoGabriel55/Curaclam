@@ -1,120 +1,200 @@
+<%# Calculate insights %>
+<%
+  # Helper to calculate total experience
+  total_experience_months = result.dig("professional_experience")&.sum { |exp| exp["total_time_in_role_months"].to_i } || 0
+  total_experience_years = (total_experience_months / 12.0).round(1)
+
+  # Number of companies
+  companies_count = result.dig("professional_experience")&.length || 0
+
+  # Total unique technologies
+  all_technologies = []
+  all_technologies += result.dig("technical_skills", "languages")&.map { |l| l["name"] } || []
+  all_technologies += result.dig("technical_skills", "frameworks_and_libraries")&.map { |f| f["name"] } || []
+  all_technologies += result.dig("technical_skills", "databases", "relational") || []
+  all_technologies += result.dig("technical_skills", "databases", "non_relational") || []
+  all_technologies += result.dig("technical_skills", "cloud_and_infra", "providers") || []
+  all_technologies += result.dig("technical_skills", "cloud_and_infra", "tools") || []
+  all_technologies = all_technologies.compact.uniq
+  tech_count = all_technologies.length
+
+  # Certifications count
+  certs_count = result["certifications"]&.length || 0
+
+  # Languages count
+  spoken_languages_count = result["languages"]&.length || 0
+
+  # Get seniority
+  seniority = result.dig("advanced_inferences", "estimated_seniority", "value")&.capitalize
+  seniority_confidence = result.dig("advanced_inferences", "estimated_seniority", "confidence")
+
+  # Get experience flags count
+  flags = result.dig("advanced_inferences", "experience_flags") || {}
+  active_flags_count = [flags["distributed_systems"], flags["high_scale"], flags["performance_optimization"], flags["security"]].count(&:present?)
+
+  # Calculate average tenure
+  avg_tenure_months = companies_count > 0 ? (total_experience_months.to_f / companies_count).round(1) : 0
+%>
+
 <div class="dashboard-grid">
-  <!-- Personal Data Section -->
+  <!-- Executive Summary Card -->
+  <section class="dashboard-section" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+    <div style="display: flex; flex-wrap: wrap; gap: 2rem; align-items: center;">
+      <!-- Candidate Identity -->
+      <div style="flex: 1; min-width: 280px;">
+        <% if result.dig("personal_data", "full_name", "value").present? %>
+          <h1 style="margin: 0 0 0.5rem 0; font-size: 2rem; color: white; border: none;">
+            <%= result.dig("personal_data", "full_name", "value") %>
+          </h1>
+        <% end %>
+        <% if result.dig("professional_summary", "current_role", "value").present? %>
+          <p style="margin: 0 0 1rem 0; font-size: 1.25rem; opacity: 0.9;">
+            <%= result.dig("professional_summary", "current_role", "value") %>
+          </p>
+        <% end %>
+        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+          <% if seniority.present? %>
+            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.875rem; font-weight: 600;">
+              🎯 <%= seniority %>
+              <% if seniority_confidence.present? %>
+                <span style="opacity: 0.7; font-size: 0.75rem;">(<%= seniority_confidence %>)</span>
+              <% end %>
+            </span>
+          <% end %>
+          <% if result.dig("personal_data", "location", "remote") %>
+            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.875rem;">
+              🌍 Remote Available
+            </span>
+          <% end %>
+          <% location_parts = [result.dig("personal_data", "location", "city"), result.dig("personal_data", "location", "country")].compact.reject(&:blank?) %>
+          <% if location_parts.any? %>
+            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.875rem;">
+              📍 <%= location_parts.join(", ") %>
+            </span>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Quick Stats -->
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; min-width: 200px;">
+        <div style="text-align: center; padding: 1rem; background: rgba(255,255,255,0.15); border-radius: 0.75rem;">
+          <div style="font-size: 1.75rem; font-weight: 700;"><%= result.dig("professional_summary", "estimated_years_experience", "value") || total_experience_years %></div>
+          <div style="font-size: 0.75rem; opacity: 0.8; text-transform: uppercase;">Years Exp</div>
+        </div>
+        <div style="text-align: center; padding: 1rem; background: rgba(255,255,255,0.15); border-radius: 0.75rem;">
+          <div style="font-size: 1.75rem; font-weight: 700;"><%= companies_count %></div>
+          <div style="font-size: 0.75rem; opacity: 0.8; text-transform: uppercase;">Companies</div>
+        </div>
+        <div style="text-align: center; padding: 1rem; background: rgba(255,255,255,0.15); border-radius: 0.75rem;">
+          <div style="font-size: 1.75rem; font-weight: 700;"><%= tech_count %></div>
+          <div style="font-size: 0.75rem; opacity: 0.8; text-transform: uppercase;">Technologies</div>
+        </div>
+        <div style="text-align: center; padding: 1rem; background: rgba(255,255,255,0.15); border-radius: 0.75rem;">
+          <div style="font-size: 1.75rem; font-weight: 700;"><%= certs_count %></div>
+          <div style="font-size: 0.75rem; opacity: 0.8; text-transform: uppercase;">Certifications</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Career Insights Bar -->
+  <section class="dashboard-section" style="padding: 1.25rem 1.5rem;">
+    <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1.5rem;">
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <span style="font-size: 1.5rem;">📊</span>
+        <div>
+          <div style="font-size: 0.75rem; color: var(--color-gray-500); text-transform: uppercase;">Primary Area</div>
+          <div style="font-weight: 600;"><%= result.dig("professional_summary", "primary_area") || "N/A" %></div>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <span style="font-size: 1.5rem;">⏱️</span>
+        <div>
+          <div style="font-size: 0.75rem; color: var(--color-gray-500); text-transform: uppercase;">Avg Tenure</div>
+          <div style="font-weight: 600;"><%= avg_tenure_months %> months</div>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <span style="font-size: 1.5rem;">🏢</span>
+        <div>
+          <div style="font-size: 0.75rem; color: var(--color-gray-500); text-transform: uppercase;">Environment</div>
+          <div style="font-weight: 600;"><%= result.dig("advanced_inferences", "environment_type", "value")&.capitalize || "N/A" %></div>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <span style="font-size: 1.5rem;">🌐</span>
+        <div>
+          <div style="font-size: 0.75rem; color: var(--color-gray-500); text-transform: uppercase;">Languages</div>
+          <div style="font-weight: 600;"><%= spoken_languages_count %> spoken</div>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <span style="font-size: 1.5rem;">⚡</span>
+        <div>
+          <div style="font-size: 0.75rem; color: var(--color-gray-500); text-transform: uppercase;">Expertise Flags</div>
+          <div style="font-weight: 600;"><%= active_flags_count %>/4 areas</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact Information & Links -->
   <% if result["personal_data"].present? %>
-    <section class="dashboard-section personal-info-section">
-      <h2><span class="section-icon">👤</span> Personal Information</h2>
+    <section class="dashboard-section">
+      <h2><span class="section-icon">📬</span> Contact & Links</h2>
       <div class="info-grid">
         <% personal = result["personal_data"] %>
-        <% if personal["full_name"].present? && personal["full_name"]["value"].present? %>
-          <div class="info-item">
-            <span class="info-label">Name</span>
-            <span class="info-value"><%= personal["full_name"]["value"] %></span>
-          </div>
-        <% end %>
-        <% if personal["email"].present? && personal["email"]["value"].present? %>
+        <% if personal.dig("email", "value").present? %>
           <div class="info-item">
             <span class="info-label">Email</span>
-            <span class="info-value"><%= mail_to personal["email"]["value"] %></span>
+            <span class="info-value"><%= mail_to personal.dig("email", "value"), personal.dig("email", "value"), style: "color: var(--color-primary);" %></span>
           </div>
         <% end %>
-        <% if personal["phone"].present? && personal["phone"]["value"].present? %>
+        <% if personal.dig("phone", "value").present? %>
           <div class="info-item">
             <span class="info-label">Phone</span>
-            <span class="info-value"><%= personal["phone"]["value"] %></span>
+            <span class="info-value"><%= personal.dig("phone", "value") %></span>
           </div>
         <% end %>
-        <% if personal["location"].present? %>
-          <% location = personal["location"] %>
-          <% location_parts = [location["city"], location["country"]].compact.reject(&:blank?) %>
-          <% if location_parts.any? || location["remote"] %>
-            <div class="info-item">
-              <span class="info-label">Location</span>
-              <span class="info-value">
-                <%= location_parts.join(", ") %>
-                <% if location["remote"] %>
-                  <span class="badge badge-success" style="margin-left: 0.5rem;">Remote</span>
-                <% end %>
-              </span>
-            </div>
-          <% end %>
+        <% if personal.dig("links", "linkedin").present? %>
+          <div class="info-item">
+            <span class="info-label">LinkedIn</span>
+            <span class="info-value"><%= link_to "View Profile →", personal.dig("links", "linkedin"), target: "_blank", style: "color: var(--color-primary);" %></span>
+          </div>
         <% end %>
-        <% if personal["links"].present? %>
-          <% links = personal["links"] %>
-          <% if links["linkedin"].present? %>
-            <div class="info-item">
-              <span class="info-label">LinkedIn</span>
-              <span class="info-value"><%= link_to links["linkedin"], links["linkedin"], target: "_blank" %></span>
-            </div>
-          <% end %>
-          <% if links["github"].present? %>
-            <div class="info-item">
-              <span class="info-label">GitHub</span>
-              <span class="info-value"><%= link_to links["github"], links["github"], target: "_blank" %></span>
-            </div>
-          <% end %>
-          <% if links["portfolio"].present? %>
-            <div class="info-item">
-              <span class="info-label">Portfolio</span>
-              <span class="info-value"><%= link_to links["portfolio"], links["portfolio"], target: "_blank" %></span>
-            </div>
-          <% end %>
-          <% if links["technical_blog"].present? %>
-            <div class="info-item">
-              <span class="info-label">Technical Blog</span>
-              <span class="info-value"><%= link_to links["technical_blog"], links["technical_blog"], target: "_blank" %></span>
-            </div>
-          <% end %>
+        <% if personal.dig("links", "github").present? %>
+          <div class="info-item">
+            <span class="info-label">GitHub</span>
+            <span class="info-value"><%= link_to "View Profile →", personal.dig("links", "github"), target: "_blank", style: "color: var(--color-primary);" %></span>
+          </div>
+        <% end %>
+        <% if personal.dig("links", "portfolio").present? %>
+          <div class="info-item">
+            <span class="info-label">Portfolio</span>
+            <span class="info-value"><%= link_to "View Portfolio →", personal.dig("links", "portfolio"), target: "_blank", style: "color: var(--color-primary);" %></span>
+          </div>
+        <% end %>
+        <% if personal.dig("links", "technical_blog").present? %>
+          <div class="info-item">
+            <span class="info-label">Technical Blog</span>
+            <span class="info-value"><%= link_to "View Blog →", personal.dig("links", "technical_blog"), target: "_blank", style: "color: var(--color-primary);" %></span>
+          </div>
         <% end %>
       </div>
     </section>
   <% end %>
 
-  <!-- Professional Summary Section -->
-  <% if result["professional_summary"].present? %>
-    <section class="dashboard-section summary-section">
-      <h2><span class="section-icon">📝</span> Professional Summary</h2>
-      <% summary = result["professional_summary"] %>
-      <div class="info-grid vertical" style="margin-bottom: 1.5rem;">
-        <% if summary["current_role"].present? && summary["current_role"]["value"].present? %>
-          <div class="info-item">
-            <span class="info-label">Current Role</span>
-            <span class="info-value" style="font-size: 1.125rem; font-weight: 600;"><%= summary["current_role"]["value"] %></span>
-          </div>
-        <% end %>
-        <% if summary["primary_area"].present? %>
-          <div class="info-item">
-            <span class="info-label">Primary Area</span>
-            <span class="info-value"><%= summary["primary_area"] %></span>
-          </div>
-        <% end %>
-        <% if summary["estimated_years_experience"].present? %>
-          <% exp = summary["estimated_years_experience"] %>
-          <div class="info-item">
-            <span class="info-label">Experience</span>
-            <span class="info-value">
-              <%= exp["value"] %> years
-              <% if exp["confidence"].present? %>
-                <span class="badge badge-<%= exp["confidence"] == 'high' ? 'success' : (exp["confidence"] == 'medium' ? 'warning' : 'secondary') %>" style="margin-left: 0.5rem;">
-                  <%= exp["confidence"].capitalize %> confidence
-                </span>
-              <% end %>
-            </span>
-            <% if exp["method"].present? %>
-              <span class="info-sublabel" style="font-size: 0.75rem; color: var(--color-gray-400);">Method: <%= exp["method"] %></span>
-            <% end %>
-          </div>
+  <!-- Primary Stack Highlight -->
+  <% if result.dig("professional_summary", "primary_stack").present? && result.dig("professional_summary", "primary_stack").any? %>
+    <section class="dashboard-section" style="border-left: 4px solid var(--color-primary);">
+      <h2><span class="section-icon">⭐</span> Primary Stack</h2>
+      <div class="skill-tags" style="gap: 0.75rem;">
+        <% result.dig("professional_summary", "primary_stack").each do |tech| %>
+          <span class="skill-tag technical" style="font-size: 1rem; padding: 0.5rem 1rem; background: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 100%); border: 1px solid #93c5fd;">
+            <%= tech %>
+          </span>
         <% end %>
       </div>
-      <% if summary["primary_stack"].present? && summary["primary_stack"].any? %>
-        <div class="skill-category">
-          <h4>Primary Stack</h4>
-          <div class="skill-tags">
-            <% summary["primary_stack"].each do |tech| %>
-              <span class="skill-tag technical"><%= tech %></span>
-            <% end %>
-          </div>
-        </div>
-      <% end %>
     </section>
   <% end %>
 
@@ -125,34 +205,51 @@
       <div class="skills-grid">
         <% skills = result["technical_skills"] %>
 
-        <!-- Programming Languages -->
+        <!-- Programming Languages with Experience Bars -->
         <% if skills["languages"].present? && skills["languages"].any? %>
           <div class="skill-category">
             <h4>Programming Languages</h4>
-            <div class="skill-tags">
-              <% skills["languages"].each do |lang| %>
-                <span class="skill-tag technical" title="<%= lang["estimated_experience_years"] %> years experience">
-                  <%= lang["name"] %>
+            <div style="display: grid; gap: 0.75rem;">
+              <% skills["languages"].sort_by { |l| -(l["estimated_experience_years"].to_f) }.each do |lang| %>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                  <span style="min-width: 100px; font-weight: 500;"><%= lang["name"] %></span>
+                  <div style="flex: 1; height: 8px; background: var(--color-gray-100); border-radius: 4px; overflow: hidden;">
+                    <% exp_years = lang["estimated_experience_years"].to_f %>
+                    <% max_years = 10.0 %>
+                    <% width_pct = [(exp_years / max_years * 100), 100].min %>
+                    <div style="height: 100%; width: <%= width_pct %>%; background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 100%); border-radius: 4px;"></div>
+                  </div>
+                  <span style="min-width: 60px; text-align: right; font-size: 0.875rem; color: var(--color-gray-600);">
+                    <%= exp_years %> yrs
+                  </span>
                   <% if lang["level"].present? %>
-                    <span style="opacity: 0.7; font-size: 0.75rem;"> (<%= lang["level"] %>)</span>
+                    <span class="badge badge-<%= lang["level"]&.downcase == 'expert' ? 'success' : (lang["level"]&.downcase == 'advanced' ? 'info' : 'secondary') %>" style="min-width: 80px; text-align: center;">
+                      <%= lang["level"] %>
+                    </span>
                   <% end %>
-                </span>
+                </div>
               <% end %>
             </div>
           </div>
         <% end %>
 
-        <!-- Frameworks & Libraries -->
+        <!-- Frameworks & Libraries grouped by stack -->
         <% if skills["frameworks_and_libraries"].present? && skills["frameworks_and_libraries"].any? %>
           <div class="skill-category">
             <h4>Frameworks & Libraries</h4>
-            <div class="skill-tags">
-              <% skills["frameworks_and_libraries"].each do |fw| %>
-                <span class="skill-tag soft" title="<%= fw["associated_stack"] %>">
-                  <%= fw["name"] %>
-                </span>
-              <% end %>
-            </div>
+            <%
+              grouped_frameworks = skills["frameworks_and_libraries"].group_by { |f| f["associated_stack"] || "General" }
+            %>
+            <% grouped_frameworks.each do |stack, frameworks| %>
+              <div style="margin-bottom: 1rem;">
+                <span style="font-size: 0.75rem; color: var(--color-gray-500); text-transform: uppercase; letter-spacing: 0.05em;"><%= stack %></span>
+                <div class="skill-tags" style="margin-top: 0.5rem;">
+                  <% frameworks.each do |fw| %>
+                    <span class="skill-tag soft"><%= fw["name"] %></span>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
           </div>
         <% end %>
 
@@ -162,16 +259,26 @@
           <% if (db["relational"].present? && db["relational"].any?) || (db["non_relational"].present? && db["non_relational"].any?) %>
             <div class="skill-category">
               <h4>Databases</h4>
-              <div class="skill-tags">
-                <% if db["relational"].present? %>
-                  <% db["relational"].each do |d| %>
-                    <span class="skill-tag language" title="Relational"><%= d %></span>
-                  <% end %>
+              <div style="display: flex; flex-wrap: wrap; gap: 2rem;">
+                <% if db["relational"].present? && db["relational"].any? %>
+                  <div>
+                    <span style="font-size: 0.75rem; color: var(--color-gray-500); text-transform: uppercase;">Relational</span>
+                    <div class="skill-tags" style="margin-top: 0.5rem;">
+                      <% db["relational"].each do |d| %>
+                        <span class="skill-tag language"><%= d %></span>
+                      <% end %>
+                    </div>
+                  </div>
                 <% end %>
-                <% if db["non_relational"].present? %>
-                  <% db["non_relational"].each do |d| %>
-                    <span class="skill-tag" style="background-color: #fef3c7; color: #92400e;" title="Non-relational"><%= d %></span>
-                  <% end %>
+                <% if db["non_relational"].present? && db["non_relational"].any? %>
+                  <div>
+                    <span style="font-size: 0.75rem; color: var(--color-gray-500); text-transform: uppercase;">Non-Relational</span>
+                    <div class="skill-tags" style="margin-top: 0.5rem;">
+                      <% db["non_relational"].each do |d| %>
+                        <span class="skill-tag" style="background-color: #fef3c7; color: #92400e;"><%= d %></span>
+                      <% end %>
+                    </div>
+                  </div>
                 <% end %>
               </div>
             </div>
@@ -184,23 +291,33 @@
           <% if (cloud["providers"].present? && cloud["providers"].any?) || (cloud["tools"].present? && cloud["tools"].any?) %>
             <div class="skill-category">
               <h4>Cloud & Infrastructure</h4>
-              <div class="skill-tags">
-                <% if cloud["providers"].present? %>
-                  <% cloud["providers"].each do |p| %>
-                    <span class="skill-tag" style="background-color: #dbeafe; color: #1e40af;"><%= p %></span>
-                  <% end %>
+              <div style="display: flex; flex-wrap: wrap; gap: 2rem;">
+                <% if cloud["providers"].present? && cloud["providers"].any? %>
+                  <div>
+                    <span style="font-size: 0.75rem; color: var(--color-gray-500); text-transform: uppercase;">Providers</span>
+                    <div class="skill-tags" style="margin-top: 0.5rem;">
+                      <% cloud["providers"].each do |p| %>
+                        <span class="skill-tag" style="background-color: #dbeafe; color: #1e40af;"><%= p %></span>
+                      <% end %>
+                    </div>
+                  </div>
                 <% end %>
-                <% if cloud["tools"].present? %>
-                  <% cloud["tools"].each do |t| %>
-                    <span class="skill-tag" style="background-color: #e0e7ff; color: #3730a3;"><%= t %></span>
-                  <% end %>
+                <% if cloud["tools"].present? && cloud["tools"].any? %>
+                  <div>
+                    <span style="font-size: 0.75rem; color: var(--color-gray-500); text-transform: uppercase;">Tools</span>
+                    <div class="skill-tags" style="margin-top: 0.5rem;">
+                      <% cloud["tools"].each do |t| %>
+                        <span class="skill-tag" style="background-color: #e0e7ff; color: #3730a3;"><%= t %></span>
+                      <% end %>
+                    </div>
+                  </div>
                 <% end %>
               </div>
             </div>
           <% end %>
         <% end %>
 
-        <!-- General Tools -->
+        <!-- Development Tools -->
         <% if skills["general_tools"].present? %>
           <% tools = skills["general_tools"] %>
           <% has_tools = (tools["version_control"].present? && tools["version_control"].any?) ||
@@ -209,25 +326,71 @@
           <% if has_tools %>
             <div class="skill-category">
               <h4>Development Tools</h4>
-              <div class="skill-tags">
-                <% if tools["version_control"].present? %>
-                  <% tools["version_control"].each do |vc| %>
-                    <span class="skill-tag" style="background-color: #f3e8ff; color: #6b21a8;" title="Version Control"><%= vc %></span>
-                  <% end %>
+              <div style="display: flex; flex-wrap: wrap; gap: 2rem;">
+                <% if tools["version_control"].present? && tools["version_control"].any? %>
+                  <div>
+                    <span style="font-size: 0.75rem; color: var(--color-gray-500); text-transform: uppercase;">Version Control</span>
+                    <div class="skill-tags" style="margin-top: 0.5rem;">
+                      <% tools["version_control"].each do |vc| %>
+                        <span class="skill-tag" style="background-color: #f3e8ff; color: #6b21a8;"><%= vc %></span>
+                      <% end %>
+                    </div>
+                  </div>
                 <% end %>
-                <% if tools["ci_cd"].present? %>
-                  <% tools["ci_cd"].each do |ci| %>
-                    <span class="skill-tag" style="background-color: #dcfce7; color: #166534;" title="CI/CD"><%= ci %></span>
-                  <% end %>
+                <% if tools["ci_cd"].present? && tools["ci_cd"].any? %>
+                  <div>
+                    <span style="font-size: 0.75rem; color: var(--color-gray-500); text-transform: uppercase;">CI/CD</span>
+                    <div class="skill-tags" style="margin-top: 0.5rem;">
+                      <% tools["ci_cd"].each do |ci| %>
+                        <span class="skill-tag" style="background-color: #dcfce7; color: #166534;"><%= ci %></span>
+                      <% end %>
+                    </div>
+                  </div>
                 <% end %>
-                <% if tools["observability"].present? %>
-                  <% tools["observability"].each do |obs| %>
-                    <span class="skill-tag" style="background-color: #ffedd5; color: #9a3412;" title="Observability"><%= obs %></span>
-                  <% end %>
+                <% if tools["observability"].present? && tools["observability"].any? %>
+                  <div>
+                    <span style="font-size: 0.75rem; color: var(--color-gray-500); text-transform: uppercase;">Observability</span>
+                    <div class="skill-tags" style="margin-top: 0.5rem;">
+                      <% tools["observability"].each do |obs| %>
+                        <span class="skill-tag" style="background-color: #ffedd5; color: #9a3412;"><%= obs %></span>
+                      <% end %>
+                    </div>
+                  </div>
                 <% end %>
               </div>
             </div>
           <% end %>
+        <% end %>
+      </div>
+    </section>
+  <% end %>
+
+  <!-- Experience Flags / Expertise Areas -->
+  <% if result.dig("advanced_inferences", "experience_flags").present? %>
+    <% flags = result.dig("advanced_inferences", "experience_flags") %>
+    <% flag_items = [
+      { key: "distributed_systems", name: "Distributed Systems", icon: "🔗", desc: "Experience building and maintaining distributed architectures", color: "#dbeafe", text_color: "#1e40af" },
+      { key: "high_scale", name: "High Scale", icon: "📈", desc: "Experience with high-traffic, scalable systems", color: "#dcfce7", text_color: "#166534" },
+      { key: "performance_optimization", name: "Performance Optimization", icon: "⚡", desc: "Experience optimizing system and application performance", color: "#fef3c7", text_color: "#92400e" },
+      { key: "security", name: "Security", icon: "🔒", desc: "Experience with security best practices and implementations", color: "#fce7f3", text_color: "#9d174d" }
+    ] %>
+    <section class="dashboard-section">
+      <h2><span class="section-icon">🏆</span> Expertise Areas</h2>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+        <% flag_items.each do |flag| %>
+          <% is_active = flags[flag[:key]] %>
+          <div style="padding: 1rem; border-radius: 0.75rem; background: <%= is_active ? flag[:color] : 'var(--color-gray-50)' %>; border: 2px solid <%= is_active ? flag[:text_color] : 'var(--color-gray-200)' %>; opacity: <%= is_active ? '1' : '0.5' %>;">
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+              <span style="font-size: 1.25rem;"><%= flag[:icon] %></span>
+              <span style="font-weight: 600; color: <%= is_active ? flag[:text_color] : 'var(--color-gray-500)' %>;"><%= flag[:name] %></span>
+              <% if is_active %>
+                <span style="margin-left: auto; color: <%= flag[:text_color] %>;">✓</span>
+              <% end %>
+            </div>
+            <p style="margin: 0; font-size: 0.75rem; color: <%= is_active ? flag[:text_color] : 'var(--color-gray-400)' %>;">
+              <%= flag[:desc] %>
+            </p>
+          </div>
         <% end %>
       </div>
     </section>
@@ -238,24 +401,27 @@
     <section class="dashboard-section experience-section">
       <h2><span class="section-icon">💼</span> Professional Experience</h2>
       <div class="timeline">
-        <% result["professional_experience"].each do |exp| %>
-          <div class="timeline-item">
+        <% result["professional_experience"].each_with_index do |exp, idx| %>
+          <div class="timeline-item" style="<%= idx == 0 ? 'border-left-color: var(--color-primary); border-left-width: 3px;' : '' %>">
+            <% if idx == 0 %>
+              <span class="badge badge-success" style="margin-bottom: 0.5rem; font-size: 0.7rem;">CURRENT</span>
+            <% end %>
             <div class="timeline-header">
               <h4 class="timeline-title"><%= exp["role"] %></h4>
-              <span class="timeline-company"><%= exp["company"] %></span>
+              <span class="timeline-company">@ <%= exp["company"] %></span>
             </div>
             <% if exp["period"].present? %>
               <span class="timeline-period">
-                <%= exp["period"]["start"] %> - <%= exp["period"]["end"] || "Present" %>
+                📅 <%= exp["period"]["start"] %> – <%= exp["period"]["end"].present? ? exp["period"]["end"] : "Present" %>
                 <% if exp["total_time_in_role_months"].present? %>
-                  <span style="margin-left: 0.5rem; color: var(--color-gray-400);">
-                    (<%= exp["total_time_in_role_months"] %> months)
+                  <span class="badge badge-secondary" style="margin-left: 0.5rem;">
+                    <%= exp["total_time_in_role_months"] %> months
                   </span>
                 <% end %>
               </span>
             <% end %>
             <% if exp["responsibilities"].present? && exp["responsibilities"].any? %>
-              <ul class="timeline-responsibilities" style="margin: 0.75rem 0; padding-left: 1.25rem; color: var(--color-gray-600);">
+              <ul style="margin: 0.75rem 0; padding-left: 1.25rem; color: var(--color-gray-600);">
                 <% exp["responsibilities"].each do |resp| %>
                   <li style="margin-bottom: 0.25rem;"><%= resp %></li>
                 <% end %>
@@ -285,22 +451,19 @@
               <h4 class="timeline-title"><%= edu["course"] %></h4>
               <span class="timeline-company"><%= edu["institution"] %></span>
             </div>
-            <span class="timeline-period">
+            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem;">
               <% if edu["degree"].present? %>
-                <%= edu["degree"] %>
-                <% if edu["conclusion_year"].present? || edu["status"].present? %>
-                  &middot;
-                <% end %>
+                <span class="badge badge-info"><%= edu["degree"] %></span>
               <% end %>
               <% if edu["conclusion_year"].present? %>
-                <%= edu["conclusion_year"] %>
+                <span class="badge badge-secondary">📅 <%= edu["conclusion_year"] %></span>
               <% end %>
               <% if edu["status"].present? %>
-                <span class="badge badge-<%= edu["status"] == 'completed' ? 'success' : 'secondary' %>" style="margin-left: 0.5rem;">
-                  <%= edu["status"].capitalize %>
+                <span class="badge badge-<%= edu["status"]&.downcase == 'completed' ? 'success' : 'warning' %>">
+                  <%= edu["status"]&.capitalize %>
                 </span>
               <% end %>
-            </span>
+            </div>
           </div>
         <% end %>
       </div>
@@ -311,26 +474,26 @@
   <% if result["certifications"].present? && result["certifications"].any? %>
     <section class="dashboard-section certifications-section">
       <h2><span class="section-icon">🏅</span> Certifications</h2>
-      <ul class="certifications-list">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
         <% result["certifications"].each do |cert| %>
-          <li>
-            <div style="flex: 1;">
-              <strong><%= cert["name"] %></strong>
-              <% if cert["issuer"].present? %>
-                <span style="color: var(--color-gray-500);"> — <%= cert["issuer"] %></span>
-              <% end %>
-              <div style="margin-top: 0.25rem;">
-                <% if cert["year"].present? %>
-                  <span class="badge badge-secondary"><%= cert["year"] %></span>
-                <% end %>
-                <% if cert["area"].present? %>
-                  <span class="badge badge-info" style="margin-left: 0.25rem;"><%= cert["area"] %></span>
-                <% end %>
+          <div style="padding: 1rem; background: var(--color-gray-50); border-radius: 0.75rem; border-left: 4px solid var(--color-primary);">
+            <div style="font-weight: 600; margin-bottom: 0.25rem;"><%= cert["name"] %></div>
+            <% if cert["issuer"].present? %>
+              <div style="font-size: 0.875rem; color: var(--color-gray-600); margin-bottom: 0.5rem;">
+                Issued by <%= cert["issuer"] %>
               </div>
+            <% end %>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+              <% if cert["year"].present? %>
+                <span class="badge badge-secondary">📅 <%= cert["year"] %></span>
+              <% end %>
+              <% if cert["area"].present? %>
+                <span class="badge badge-info"><%= cert["area"] %></span>
+              <% end %>
             </div>
-          </li>
+          </div>
         <% end %>
-      </ul>
+      </div>
     </section>
   <% end %>
 
@@ -338,49 +501,58 @@
   <% if result["languages"].present? && result["languages"].any? %>
     <section class="dashboard-section languages-section">
       <h2><span class="section-icon">🌐</span> Languages</h2>
-      <div class="info-grid">
+      <div style="display: flex; flex-wrap: wrap; gap: 1rem;">
         <% result["languages"].each do |lang| %>
-          <div class="info-item">
-            <span class="info-label"><%= lang["language"] %></span>
-            <span class="info-value">
-              <% proficiency = lang["proficiency"] %>
-              <% color = case proficiency&.downcase
-                         when 'native', 'fluent' then 'success'
-                         when 'advanced', 'professional' then 'info'
-                         when 'intermediate' then 'warning'
-                         else 'secondary'
-                         end %>
-              <span class="badge badge-<%= color %>"><%= proficiency&.capitalize %></span>
-            </span>
+          <%
+            proficiency = lang["proficiency"]&.downcase
+            color_map = {
+              'native' => { bg: '#dcfce7', text: '#166534', icon: '🟢' },
+              'fluent' => { bg: '#dcfce7', text: '#166534', icon: '🟢' },
+              'advanced' => { bg: '#dbeafe', text: '#1e40af', icon: '🔵' },
+              'professional' => { bg: '#dbeafe', text: '#1e40af', icon: '🔵' },
+              'intermediate' => { bg: '#fef3c7', text: '#92400e', icon: '🟡' },
+              'basic' => { bg: '#fee2e2', text: '#991b1b', icon: '🟠' }
+            }
+            colors = color_map[proficiency] || { bg: 'var(--color-gray-100)', text: 'var(--color-gray-600)', icon: '⚪' }
+          %>
+          <div style="padding: 0.75rem 1.25rem; background: <%= colors[:bg] %>; border-radius: 0.75rem; display: flex; align-items: center; gap: 0.75rem;">
+            <span style="font-size: 1rem;"><%= colors[:icon] %></span>
+            <div>
+              <div style="font-weight: 600; color: <%= colors[:text] %>;"><%= lang["language"] %></div>
+              <div style="font-size: 0.75rem; color: <%= colors[:text] %>; opacity: 0.8;"><%= lang["proficiency"]&.capitalize %></div>
+            </div>
           </div>
         <% end %>
       </div>
     </section>
   <% end %>
 
-  <!-- Advanced Inferences Section -->
+  <!-- Advanced Analysis Section -->
   <% if result["advanced_inferences"].present? %>
-    <section class="dashboard-section inferences-section">
-      <h2><span class="section-icon">🔍</span> Advanced Analysis</h2>
+    <section class="dashboard-section inferences-section" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);">
+      <h2><span class="section-icon">🔍</span> AI Analysis Insights</h2>
       <% inferences = result["advanced_inferences"] %>
 
-      <div class="info-grid" style="margin-bottom: 1.5rem;">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
         <!-- Estimated Seniority -->
         <% if inferences["estimated_seniority"].present? %>
-          <% seniority = inferences["estimated_seniority"] %>
-          <div class="info-item">
-            <span class="info-label">Estimated Seniority</span>
-            <div class="info-value">
-              <strong style="font-size: 1.125rem;"><%= seniority["value"]&.capitalize %></strong>
-              <% if seniority["confidence"].present? %>
-                <span class="badge badge-<%= seniority["confidence"] == 'high' ? 'success' : (seniority["confidence"] == 'medium' ? 'warning' : 'secondary') %>" style="margin-left: 0.5rem;">
-                  <%= seniority["confidence"].capitalize %>
+          <% seniority_info = inferences["estimated_seniority"] %>
+          <div style="background: white; padding: 1.25rem; border-radius: 0.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+              <span style="font-size: 0.875rem; color: var(--color-gray-500); text-transform: uppercase; font-weight: 500;">Seniority Level</span>
+              <% if seniority_info["confidence"].present? %>
+                <span class="badge badge-<%= seniority_info["confidence"] == 'high' ? 'success' : (seniority_info["confidence"] == 'medium' ? 'warning' : 'secondary') %>">
+                  <%= seniority_info["confidence"].capitalize %> confidence
                 </span>
               <% end %>
             </div>
-            <% if seniority["criteria"].present? && seniority["criteria"].any? %>
-              <div style="margin-top: 0.5rem;">
-                <% seniority["criteria"].each do |criterion| %>
+            <div style="font-size: 1.5rem; font-weight: 700; color: var(--color-gray-800); margin-bottom: 1rem;">
+              <%= seniority_info["value"]&.capitalize %>
+            </div>
+            <% if seniority_info["criteria"].present? && seniority_info["criteria"].any? %>
+              <div style="font-size: 0.75rem; color: var(--color-gray-500); margin-bottom: 0.5rem;">Based on:</div>
+              <div class="skill-tags">
+                <% seniority_info["criteria"].each do |criterion| %>
                   <span class="skill-tag" style="background-color: var(--color-gray-100); color: var(--color-gray-600); font-size: 0.75rem;"><%= criterion %></span>
                 <% end %>
               </div>
@@ -391,42 +563,35 @@
         <!-- Environment Type -->
         <% if inferences["environment_type"].present? %>
           <% env = inferences["environment_type"] %>
-          <div class="info-item">
-            <span class="info-label">Environment Type</span>
-            <span class="info-value">
-              <strong><%= env["value"]&.capitalize %></strong>
+          <div style="background: white; padding: 1.25rem; border-radius: 0.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+              <span style="font-size: 0.875rem; color: var(--color-gray-500); text-transform: uppercase; font-weight: 500;">Environment Type</span>
               <% if env["confidence"].present? %>
-                <span class="badge badge-<%= env["confidence"] == 'high' ? 'success' : (env["confidence"] == 'medium' ? 'warning' : 'secondary') %>" style="margin-left: 0.5rem;">
-                  <%= env["confidence"].capitalize %>
-                </span>
-              <% end %>
-            </span>
-          </div>
-        <% end %>
-      </div>
-
-      <!-- Experience Flags -->
-      <% if inferences["experience_flags"].present? %>
-        <% flags = inferences["experience_flags"] %>
-        <% active_flags = [] %>
-        <% active_flags << { name: "Distributed Systems", icon: "🔗" } if flags["distributed_systems"] %>
-        <% active_flags << { name: "High Scale", icon: "📈" } if flags["high_scale"] %>
-        <% active_flags << { name: "Performance Optimization", icon: "⚡" } if flags["performance_optimization"] %>
-        <% active_flags << { name: "Security", icon: "🔒" } if flags["security"] %>
-
-        <% if active_flags.any? %>
-          <div class="skill-category">
-            <h4>Experience Indicators</h4>
-            <div class="skill-tags">
-              <% active_flags.each do |flag| %>
-                <span class="skill-tag" style="background-color: #d1fae5; color: #065f46;">
-                  <%= flag[:icon] %> <%= flag[:name] %>
+                <span class="badge badge-<%= env["confidence"] == 'high' ? 'success' : (env["confidence"] == 'medium' ? 'warning' : 'secondary') %>">
+                  <%= env["confidence"].capitalize %> confidence
                 </span>
               <% end %>
             </div>
+            <div style="font-size: 1.5rem; font-weight: 700; color: var(--color-gray-800);">
+              <%= env["value"]&.capitalize %>
+            </div>
+            <p style="margin: 0.5rem 0 0 0; font-size: 0.875rem; color: var(--color-gray-600);">
+              <% case env["value"]&.downcase %>
+              <% when 'startup' %>
+                Experience in fast-paced, agile environments with broad responsibilities
+              <% when 'enterprise' %>
+                Experience in large-scale, structured corporate environments
+              <% when 'agency' %>
+                Experience working with multiple clients and diverse projects
+              <% when 'consultancy' %>
+                Experience providing technical expertise across different organizations
+              <% else %>
+                Work environment preference identified from experience history
+              <% end %>
+            </p>
           </div>
         <% end %>
-      <% end %>
+      </div>
     </section>
   <% end %>
 </div>
