@@ -58,11 +58,13 @@ class CvAnalysisJob < ApplicationJob
   end
 
   def analyze_with_llm(extracted_text, cv_analysis)
+    system_prompt = File.read("app/jobs/prompt.md")
     prompt = build_analysis_prompt(extracted_text)
 
     tool = McpTools::NormalizeResumeTool.new(cv_analysis)
 
     chat = RubyLLM.chat(provider: :ollama)
+      .with_instructions(system_prompt)
       .with_tool(tool)
       .on_tool_call do |tool_call|
         puts "Calling tool: #{tool_call.name}"
@@ -78,11 +80,7 @@ class CvAnalysisJob < ApplicationJob
   end
 
   def build_analysis_prompt(extracted_text)
-    prompt = File.read("app/jobs/prompt.md")
-
     <<~PROMPT
-      #{prompt}
-
       ## raw curriculum text:
       #{extracted_text}
     PROMPT

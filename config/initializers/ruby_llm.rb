@@ -33,9 +33,11 @@ RubyLLM.configure do |config|
   config.gemini_api_key = ENV.fetch("GEMINI_API_KEY", nil)
 
   config.ollama_api_base = "http://localhost:11434/v1"
+  # config.openrouter_api_key = ENV.fetch("OPENROUTER_API_KEY", nil)
 
   # Default model to use for chat completions
   # Uncomment and modify based on your preferred provider:
+  # config.default_model = "anthropic/claude-opus-4.5"
   config.default_model = "qwen2.5:latest"
 
   # Request timeout in seconds (default is 120)
